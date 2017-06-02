@@ -7,6 +7,7 @@ AOPass = function(params)
 	// we may not need this - just comment it if you don't need it
 	this.normalsRenderTarget = new THREE.WebGLRenderTarget( window.innerWidth*this.params.widthMultiplier, window.innerHeight*this.params.heightMultiplier, pars );
 	this.diffuseRenderTarget = new THREE.WebGLRenderTarget( window.innerWidth, window.innerHeight, pars );
+	this.aoRenderTarget = new THREE.WebGLRenderTarget( window.innerWidth*this.params.widthMultiplier, window.innerHeight*this.params.heightMultiplier, pars );
 	
 	// textures for the shader
 	var loader = new THREE.TGALoader();
@@ -98,35 +99,60 @@ AOPass = function(params)
 	material.uniforms.uSize.value.set( this.depthRenderTarget.width, this.depthRenderTarget.height );
 	
 	////////////////////////////////////////////////////////////////////////////////////////////
-	//DANIEL HOLDEN SAO SHADER
+	//DANIEL HOLDEN NNAO SHADER
 	////////////////////////////////////////////////////////////////////////////////////////////
-	shader = DanielHoldenSAOShader;
-	this.danielHoldenSAOMaterial = new THREE.RawShaderMaterial({
+	shader = DanielHoldenNNAOShader;
+	this.danielHoldenNNAOMaterial = new THREE.RawShaderMaterial({
     	defines: shader.defines,
 		uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
 		vertexShader: shader.vertexShader,
 		fragmentShader: shader.fragmentShader
 	});
-	material = this.danielHoldenSAOMaterial;
+	material = this.danielHoldenNNAOMaterial;
 	material.depthTest = false;
 	material.uniforms.tDepth.value = this.depthRenderTarget.texture;
 	material.uniforms.tNormals.value = this.normalsRenderTarget.texture;
+	material.uniforms.tDiffuse.value = this.diffuseRenderTarget.texture;
+	//this.depthRenderTarget.texture.wrapS = THREE.MirroredRepeatWrapping;
+	//this.depthRenderTarget.texture.wrapT = THREE.MirroredRepeatWrapping;
+	//material.uniforms.tRandom.value = this.CPUTexture;
 	material.uniforms.F0.value = F0;
 	material.uniforms.F1.value = F1;
 	material.uniforms.F2.value = F2;
 	material.uniforms.F3.value = F3;
+	
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//DANIEL HOLDEN AO BLUR SHADER
+	////////////////////////////////////////////////////////////////////////////////////////////
+	shader = DanielHoldenAOBlurShader;
+	this.danielHoldenAOBlurMaterial = new THREE.RawShaderMaterial({
+    	defines: shader.defines,
+		uniforms: THREE.UniformsUtils.clone( shader.uniforms ),
+		vertexShader: shader.vertexShader,
+		fragmentShader: shader.fragmentShader
+	});
+	material = this.danielHoldenAOBlurMaterial;
+	material.depthTest = false;
+	material.uniforms.tDepth.value = this.depthRenderTarget.texture;
+	material.uniforms.tNormals.value = this.normalsRenderTarget.texture;
+	material.uniforms.tAO.value = this.aoRenderTarget.texture;
+	material.uniforms.tDiffuse.value = this.diffuseRenderTarget.texture;
 }
 
 AOPass.prototype.resize = function()
 {
 	this.depthRenderTarget.setSize(window.innerWidth*this.params.widthMultiplier, window.innerHeight*this.params.heightMultiplier);
 	this.normalsRenderTarget.setSize(window.innerWidth*this.params.widthMultiplier, window.innerHeight*this.params.heightMultiplier);
+	this.aoRenderTarget.setSize(window.innerWidth*this.params.widthMultiplier, window.innerHeight*this.params.heightMultiplier);
 	var material = undefined;
 	
 	material = this.normalsFromLinearDepthVisualizeMaterial;
 	material.uniforms.uSize.value.set( this.depthRenderTarget.width, this.depthRenderTarget.height );
 	
-	material = this.danielHoldenSAOMaterial;
+	material = this.danielHoldenNNAOMaterial;
+	material.uniforms.uSize.value.set( this.depthRenderTarget.width, this.depthRenderTarget.height );
+	
+	material = this.danielHoldenAOBlurMaterial;
 	material.uniforms.uSize.value.set( this.depthRenderTarget.width, this.depthRenderTarget.height );
 }
 
@@ -149,7 +175,19 @@ AOPass.prototype.updateCamera = function(camera)
 	material.uniforms.uCameraFar.value = camera.far;
 	material.uniforms.uProjectionMatrixInverse.value.getInverse( camera.projectionMatrix );
 	
-	material = this.danielHoldenSAOMaterial;
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//DANIEL HOLDEN NNAO SHADER
+	////////////////////////////////////////////////////////////////////////////////////////////
+	material = this.danielHoldenNNAOMaterial;
+	material.uniforms.uCameraNear.value = camera.near;
+	material.uniforms.uCameraFar.value = camera.far;
+	material.uniforms.uProjectionMatrix.value = camera.projectionMatrix;
+	material.uniforms.uProjectionMatrixInverse.value.getInverse( camera.projectionMatrix );
+	
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//DANIEL HOLDEN AO BLUR SHADER
+	////////////////////////////////////////////////////////////////////////////////////////////
+	material = this.danielHoldenAOBlurMaterial;
 	material.uniforms.uCameraNear.value = camera.near;
 	material.uniforms.uCameraFar.value = camera.far;
 	material.uniforms.uProjectionMatrix.value = camera.projectionMatrix;
@@ -158,12 +196,30 @@ AOPass.prototype.updateCamera = function(camera)
 
 AOPass.prototype.updateParameters = function()
 {
-	material = this.danielHoldenSAOMaterial;
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//DANIEL HOLDEN NNAO SHADER
+	////////////////////////////////////////////////////////////////////////////////////////////
+	material = this.danielHoldenNNAOMaterial;
 	material.uniforms.uRadius.value = this.params.radius;
 	material.uniforms.Ymean.value = this.params.ymean;
 	material.uniforms.Ystd.value = this.params.ystd;
+	material.uniforms.Xmean.value.set(this.params.xmean0, this.params.xmean1, this.params.xmean2, this.params.xmean3);
+	material.uniforms.Xstd.value.set(this.params.xstd0, this.params.xstd1, this.params.xstd2, this.params.xstd3);
 	material.uniforms.uSamples.value = this.params.samples;
-	material.uniforms.uNormalTexture.value = this.params.useNormalTexture;
+	material.uniforms.uUseNormalTexture.value = this.params.useNormalTexture;
+	material.uniforms.uUseScreenCoordRandom.value = this.params.useScreenCoordRandom;
+	material.uniforms.uCombine.value = this.params.combine;
+	
+	////////////////////////////////////////////////////////////////////////////////////////////
+	//DANIEL HOLDEN AO BLUR SHADER
+	////////////////////////////////////////////////////////////////////////////////////////////
+	material = this.danielHoldenAOBlurMaterial;
+	material.uniforms.uScaleDist.value = this.params.scaleDist;
+	material.uniforms.uScaleNorm.value = this.params.scaleNorm;
+	material.uniforms.uScaleWorld.value = this.params.scaleWorld;
+	material.uniforms.uUseNormalTexture.value = this.params.useNormalTexture;
+	material.uniforms.uCombine.value = this.params.combine;
+	
 }
 
 //renderMode = "Default"/"LinearDepth"/"Normals"/"NormalsFromLinearDepth"/"DanielHoldenSAO"
@@ -209,7 +265,7 @@ AOPass.prototype.render = function(renderer, camera, scene, renderMode)
 		renderer.setClearColor( 0xffffff );
 		renderer.render(scene, camera, this.depthRenderTarget, true);
 		// normals encode
-		if(this.danielHoldenSAOMaterial.uniforms.uNormalTexture.value)
+		if(this.danielHoldenNNAOMaterial.uniforms.uUseNormalTexture.value)
 		{
 			scene.overrideMaterial = this.normalsEncodeMaterial;
 			renderer.setClearColor( 0x000000 );
@@ -217,8 +273,17 @@ AOPass.prototype.render = function(renderer, camera, scene, renderMode)
 		}
 		scene.overrideMaterial = null;
 		
-		this.postPassScene.overrideMaterial = this.danielHoldenSAOMaterial;
+		this.postPassScene.overrideMaterial = this.danielHoldenNNAOMaterial;
 		renderer.setClearColor( 0x000000 );
+		if(this.params.combine)
+		{
+			renderer.render(scene, camera, this.diffuseRenderTarget);
+		}
+		if(this.params.blur)
+		{
+			renderer.render(this.postPassScene, this.postPassCamera, this.aoRenderTarget, true);
+			this.postPassScene.overrideMaterial = this.danielHoldenAOBlurMaterial;
+		}
 		renderer.render(this.postPassScene, this.postPassCamera, null, true);
 		break;
 	}

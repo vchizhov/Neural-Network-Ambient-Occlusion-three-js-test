@@ -31,7 +31,7 @@ EncodeNormalsShader = {
 
 		"void main() {",
 
-			"gl_FragColor = vec4(0.5*vNormal+0.5, 1.0);",
+			"gl_FragColor = vec4(0.5*normalize(vNormal)+vec3(0.5), 1.0);",
 		"}"
 
 	].join( "\n" )

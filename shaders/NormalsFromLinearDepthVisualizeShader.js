@@ -31,7 +31,7 @@ NormalsFromLinearDepthVisualizeShader = {
 
 	fragmentShader: [
 	
-		"precision mediump float;",
+		"precision highp float;",
 		
 		"uniform float cameraNear;",
 		"uniform float cameraFar;",
@@ -57,8 +57,9 @@ NormalsFromLinearDepthVisualizeShader = {
 		
 		"vec3 positionViewspace(vec2 uv, float zViewport)",
 		"{",
-		"	vec3 result =  (uProjectionMatrixInverse * vec4(2.0*uv-1.0, 0.0, 1.0)).xyz;",
-		"	result.z = zViewport*(uCameraNear-uCameraFar)-uCameraNear;",
+		"	float zEye = zViewport*(uCameraNear-uCameraFar)-uCameraNear;",
+		"	vec3 result = (uProjectionMatrixInverse * vec4((2.0*uv-1.0)*-zEye, 0.0, 1.0)).xyz;",
+		"	result.z = zEye;",
 		"	return result;",
 		"}",
 		

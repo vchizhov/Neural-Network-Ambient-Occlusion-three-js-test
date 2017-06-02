@@ -46,7 +46,8 @@
 		<script src='shaders/DepthVisualizeShader.js'></script>
 		<script src='shaders/TextureVisualizeShader.js'></script>
 		<script src='shaders/NormalsFromLinearDepthVisualizeShader.js'></script>
-		<script src='shaders/DanielHoldenSAOShader.js'></script>
+		<script src='shaders/DanielHoldenNNAOShader.js'></script>
+		<script src='shaders/DanielHoldenAOBlurShader.js'></script>
 		
 		<script src='passes/AOPass.js'></script>
 		
@@ -68,7 +69,7 @@
 			
 			params = {
 				distance: 7.0,
-				combine: true,
+				combine: false,
 				renderMode: "Default",
 				widthMultiplier: 1.0,
 				heightMultiplier: 1.0,
@@ -77,12 +78,25 @@
 				ymean: 0.1,
 				ystd: 0.116180,
 				useNormalTexture: true,
+				xmean0: 0.000052, 
+				xmean1: -0.000003, 
+				xmean2: -0.000076, 
+				xmean3: 0.004600,
+				xstd0: 0.047157,  
+				xstd1: 0.052956,  
+				xstd2: 0.030938,  
+				xstd3: 0.056321,
+				scaleDist: 0.01,
+				scaleNorm: 20.0,
+				scaleWorld: 10.0,
+				blur: false,
+				useScreenCoordRandom: false,
 			};
 
 			
 			
-			var cameraNear = 1;
-			var cameraFar = 10;
+			var cameraNear = 0.1;
+			var cameraFar = 10.0;
 			var minWidthMultiplier = 0.1;
 			var maxWidthMultiplier = 2.0;
 			var minHeightMultiplier = 0.1;
@@ -96,8 +110,18 @@
 			gui.add( params, "radius", 0.0 );
 			gui.add( params, "ymean", 0.0, 1.0 );
 			gui.add( params, "ystd", 0.0, 0.3 );
+			gui.add( params, "xmean0", -0.99, 1.0 );
+			gui.add( params, "xmean1", -0.99, 1.0 );
+			gui.add( params, "xmean2", -0.99, 1.0 );
+			gui.add( params, "xmean3", -0.99, 1.0 );
+			gui.add( params, "xstd0", -0.99, 1.0 );
+			gui.add( params, "xstd1", -0.99, 1.0 );
+			gui.add( params, "xstd2", -0.99, 1.0 );
+			gui.add( params, "xstd3", -0.99, 1.0 );
 			gui.add( params, "samples", 0, 128);
 			gui.add( params, "useNormalTexture");
+			gui.add( params, "useScreenCoordRandom");
+			gui.add( params, "blur");
 			gui.add( params, "renderMode", {
 				'Default': "Default",
 				'LinearDepth': "LinearDepth",
@@ -176,7 +200,6 @@
 					mesh.scale.x = mesh.scale.y = mesh.scale.z = Math.random() * 0.3 + 0.1;
  					group.add( mesh );
 				}
-
 				var floorMaterial = new THREE.MeshStandardMaterial();
 				material.roughness = 0.5 * Math.random() + 0.25;
 				material.metalness = 0;
