@@ -219,7 +219,9 @@ AOPass.prototype.updateParameters = function()
 	material.uniforms.uScaleWorld.value = this.params.scaleWorld;
 	material.uniforms.uUseNormalTexture.value = this.params.useNormalTexture;
 	material.uniforms.uCombine.value = this.params.combine;
-	
+	material.uniforms.uScaleDist.value = this.params.scaleDist;
+	material.uniforms.uScaleNorm.value = this.params.scaleNorm;
+	material.uniforms.uScaleWorld.value = this.params.scaleWorld;
 }
 
 //renderMode = "Default"/"LinearDepth"/"Normals"/"NormalsFromLinearDepth"/"DanielHoldenSAO"

@@ -91,6 +91,9 @@
 				scaleWorld: 10.0,
 				blur: false,
 				useScreenCoordRandom: false,
+				scaleDist: 0.01,
+				scaleNorm: 9.9,
+				scaleWorld: 9.9,
 			};
 
 			
@@ -118,6 +121,9 @@
 			gui.add( params, "xstd1", -0.99, 1.0 );
 			gui.add( params, "xstd2", -0.99, 1.0 );
 			gui.add( params, "xstd3", -0.99, 1.0 );
+			gui.add( params, "scaleDist", 0.0, 0.1 );
+			gui.add( params, "scaleNorm", 0.0, 20.0 );
+			gui.add( params, "scaleWorld", 0.0, 20.0 );
 			gui.add( params, "samples", 0, 128);
 			gui.add( params, "useNormalTexture");
 			gui.add( params, "useScreenCoordRandom");
