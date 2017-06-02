@@ -2,4 +2,4 @@
 
 Three js implementation based on: http://theorangeduck.com/page/neural-network-ambient-occlusion
 
-![alt tag](http://imgur.com/a/F1wbg)
+![alt tag](http://i.imgur.com/4hQzTLZ.png)
